@@ -145,8 +145,13 @@ jobs:
           hmrs-app:${{ env.IMAGE_TAG }} \
           $ECR_REGISTRY/hmrs-app:${{ env.IMAGE_TAG }}
 
-          docker push \
-          $ECR_REGISTRY/hmrs-app:${{ env.IMAGE_TAG }}
+          docker tag \
+          hmrs-app:${{ env.IMAGE_TAG }} \
+          $ECR_REGISTRY/hmrs-app:latest
+      
+          docker push $ECR_REGISTRY/hmrs-app:latest
+
+          docker push $ECR_REGISTRY/hmrs-app:${{ env.IMAGE_TAG }}
 
       # --------------------------------
       # ECS DEPLOY
