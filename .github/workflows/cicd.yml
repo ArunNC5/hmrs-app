@@ -106,6 +106,15 @@ jobs:
         with:
           image-ref: hmrs-app:${{ env.IMAGE_TAG }}
           severity: CRITICAL,HIGH
+      # --------------------------------
+      # TERRAFORM INFRA SCAN
+      # --------------------------------
+      - name: Terraform Security Scan
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: terraform
+          quiet: true
+          soft_fail: true
 
       # --------------------------------
       # AWS LOGIN USING ACCESS KEY
