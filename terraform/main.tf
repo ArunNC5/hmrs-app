@@ -133,5 +133,6 @@ resource "aws_ecs_service" "hmrs" {
 
    network_configuration {
     subnets = data.aws_subnets.default.ids
+    assign_public_ip = true
   }
 }
