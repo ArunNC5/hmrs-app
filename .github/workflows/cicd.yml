@@ -8,7 +8,6 @@ on:
 permissions:
   contents: read
   security-events: write
-  id-token: write
 
 env:
   AWS_REGION: us-east-1
@@ -25,58 +24,60 @@ jobs:
 
     steps:
 
-      # -----------------------------
+      # --------------------------------
       # GIT CLONE
-      # -----------------------------
+      # --------------------------------
       - name: Checkout Source
         uses: actions/checkout@v4
 
-      # -----------------------------
+      # --------------------------------
       # JAVA SETUP
-      # -----------------------------
+      # --------------------------------
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # -----------------------------
-      # MAVEN BUILD
-      # -----------------------------
-      - name: Build Application
+      # --------------------------------
+      # BUILD
+      # --------------------------------
+      - name: Maven Build
         run: mvn clean package -DskipTests
 
-      # -----------------------------
+      # --------------------------------
       # UNIT TEST
-      # -----------------------------
+      # --------------------------------
       - name: Run Unit Tests
         run: mvn test
 
-      # -----------------------------
-      # SONARQUBE CODE QUALITY
-      # -----------------------------
-      - name: SonarQube Scan
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          mvn sonar:sonar \
-          -Dsonar.projectKey=hmrs-app
+      # --------------------------------
+      # PMD CODE QUALITY
+      # --------------------------------
+      - name: PMD Scan
+        run: mvn pmd:pmd
 
-      # -----------------------------
-      # SECRETS SCAN
-      # -----------------------------
-      - name: Gitleaks Secret Scan
+      # --------------------------------
+      # SPOTBUGS SECURITY SCAN
+      # --------------------------------
+      - name: SpotBugs Scan
+        run: mvn spotbugs:spotbugs
+
+      # --------------------------------
+      # GITLEAKS SECRET SCAN
+      # --------------------------------
+      - name: Gitleaks Scan
         uses: gitleaks/gitleaks-action@v2
 
-      # -----------------------------
-      # SAST SCAN
-      # -----------------------------
-      - name: Semgrep SAST Scan
+      # --------------------------------
+      # SEMGREP SAST
+      # --------------------------------
+      - name: Semgrep Scan
         uses: returntocorp/semgrep-action@v1
 
-      # -----------------------------
-      # DEPENDENCY VULNERABILITY SCAN
-      # -----------------------------
+      # --------------------------------
+      # OWASP DEPENDENCY SCAN
+      # --------------------------------
       - name: OWASP Dependency Check
         run: |
           docker run --rm \
@@ -85,43 +86,44 @@ jobs:
             --scan /src \
             --format HTML
 
-      # -----------------------------
+      # --------------------------------
       # DOCKER BUILD
-      # -----------------------------
+      # --------------------------------
       - name: Build Docker Image
         run: |
           docker build \
           -t hmrs-app:${{ env.IMAGE_TAG }} .
 
-      # -----------------------------
-      # IMAGE VULNERABILITY SCAN
-      # -----------------------------
-      - name: Trivy Image Scan
+      # --------------------------------
+      # TRIVY IMAGE SCAN
+      # --------------------------------
+      - name: Trivy Scan
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: hmrs-app:${{ env.IMAGE_TAG }}
           severity: CRITICAL,HIGH
           exit-code: 1
 
-      # -----------------------------
-      # AWS LOGIN
-      # -----------------------------
+      # --------------------------------
+      # AWS LOGIN USING ACCESS KEY
+      # --------------------------------
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      # -----------------------------
+      # --------------------------------
       # LOGIN TO ECR
-      # -----------------------------
+      # --------------------------------
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # -----------------------------
-      # DOCKER PUSH
-      # -----------------------------
+      # --------------------------------
+      # PUSH IMAGE
+      # --------------------------------
       - name: Push Docker Image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
@@ -134,10 +136,10 @@ jobs:
           docker push \
           $ECR_REGISTRY/hmrs-app:${{ env.IMAGE_TAG }}
 
-      # -----------------------------
-      # ECS DEPLOYMENT
-      # -----------------------------
-      - name: Deploy to ECS
+      # --------------------------------
+      # ECS DEPLOY
+      # --------------------------------
+      - name: ECS Deploy
         run: |
 
           aws ecs update-service \
@@ -145,9 +147,9 @@ jobs:
             --service hmrs-service \
             --force-new-deployment
 
-      # -----------------------------
-      # SMOKE TEST
-      # -----------------------------
-      - name: Application Smoke Test
+      # --------------------------------
+      # DEPLOYMENT SUCCESS
+      # --------------------------------
+      - name: Deployment Completed
         run: |
-          echo "Deployment completed successfully"
+          echo "HMRS deployed successfully"
