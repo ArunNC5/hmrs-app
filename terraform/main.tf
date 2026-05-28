@@ -2,6 +2,17 @@ provider "aws" {
   region = "us-east-1"
 }
 
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+
 # -----------------------------
 # ECR REPOSITORY
 # -----------------------------
@@ -75,6 +86,8 @@ resource "aws_ecs_task_definition" "hmrs" {
 
   execution_role_arn       = aws_iam_role.ecs_execution_role.arn
 
+ 
+
   container_definitions = jsonencode([
     {
       name  = "hmrs-app"
@@ -117,4 +130,8 @@ resource "aws_ecs_service" "hmrs" {
   desired_count   = 1
 
   launch_type     = "FARGATE"
+
+   network_configuration {
+    subnets = data.aws_subnets.default.ids
+  }
 }
