@@ -1,0 +1,9 @@
+.git
+.github
+terraform
+node_modules
+*.log
+*.md
+target
+.idea
+.vscode
