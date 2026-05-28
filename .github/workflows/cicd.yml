@@ -86,7 +86,7 @@ jobs:
             owasp/dependency-check \
             --scan /src \
             --nvdApiKey ${{ secrets.NVD_API_KEY_NEW }} \
-            --format HTML
+            --format JSON
 
       # --------------------------------
       # DOCKER BUILD
