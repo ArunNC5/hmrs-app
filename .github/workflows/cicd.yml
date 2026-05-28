@@ -90,7 +90,7 @@ jobs:
             --scan /src \
             --nvdApiKey ${{ secrets.NVD_API_KEY_NEW }} \
             --format JSON \
-            --out /src/reports
+            --out reports/
       
       - name: Upload Dependency Report
         uses: actions/upload-artifact@v4
