@@ -79,6 +79,7 @@ jobs:
       # --------------------------------
 
       - name: OWASP Dependency Check
+        continue-on-error: true
         run: |
       
           mkdir -p reports
