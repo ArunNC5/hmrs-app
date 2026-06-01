@@ -4,7 +4,18 @@ on:
   push:
     branches:
       - master
-
+  workflow_dispatch:
+    inputs:
+      deploy_branch:
+        description: 'Select branch to deploy'
+        required: true
+        default: 'master'
+        type: choice
+        options:
+          - master
+          - dev
+          - qa
+          - stage
 permissions:
   contents: read
   security-events: write
@@ -27,8 +38,10 @@ jobs:
       # --------------------------------
       # GIT CLONE
       # --------------------------------
-      - name: Checkout Source
-        uses: actions/checkout@v4
+     - name: Checkout Source
+       uses: actions/checkout@v4
+       with:
+        ref: ${{ github.event.inputs.deploy_branch || github.ref_name }}
 
       # --------------------------------
       # JAVA SETUP
