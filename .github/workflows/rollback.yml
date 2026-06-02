@@ -1,0 +1,78 @@
+name: HMRS Enterprise DevSecOps Rollback Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_commit_sha:
+        description: 'Enter the exact Git Commit SHA to roll back to'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: hmrs-app
+  ECS_CLUSTER: hmrs-cluster
+  ECS_SERVICE: hmrs-service
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+
+    steps:
+      # --------------------------------
+      # AWS LOGIN USING ACCESS KEY
+      # --------------------------------
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # --------------------------------
+      # LOGIN TO ECR
+      # --------------------------------
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # --------------------------------
+      # FETCH ACTIVE TASK DEFINITION
+      # --------------------------------
+      - name: Download Current Task Definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.ECS_SERVICE }} \
+            --query taskDefinition > task-def.json
+
+      # --------------------------------
+      # RENDER NEW TASK DEFINITION WITH OLD IMAGE TAG
+      # --------------------------------
+      - name: Update Image Tag in Task Definition
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-def.json
+          container-name: ${{ env.ECR_REPOSITORY }}
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ inputs.target_commit_sha }}
+
+      # --------------------------------
+      # DEPLOY THE OLD IMAGE TO ECS
+      # --------------------------------
+      - name: Deploy Rollback to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      # --------------------------------
+      # ROLLBACK COMPLETE
+      # --------------------------------
+      - name: Rollback Finished
+        run: |
+          echo "HMRS application rolled back successfully to image tag: ${{ inputs.target_commit_sha }}"
