@@ -75,6 +75,14 @@ jobs:
       # --------------------------------
       - name: SpotBugs Scan
         run: mvn spotbugs:spotbugs
+        
+      - name: Upload SpotBugs Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: spotbugs-report
+          path: |
+            **/target/spotbugsXml.xml
+            **/target/site/spotbugs.html
 
       # --------------------------------
       # GITLEAKS SECRET SCAN
@@ -87,6 +95,12 @@ jobs:
       # --------------------------------
       - name: Semgrep Scan
         uses: returntocorp/semgrep-action@v1
+
+      - name: Upload Semgrep Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-sast-report
+          path: semgrep-report.json
         
       # --------------------------------
       # OWASP DEPENDENCY SCAN
