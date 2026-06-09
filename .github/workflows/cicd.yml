@@ -22,7 +22,7 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: hmrs-app
+  ECR_REPOSITORY: hmrs_np_app_repo
   ECS_CLUSTER: hmrs-cluster
   ECS_SERVICE: hmrs-service
   IMAGE_TAG: ${{ github.sha }}
@@ -187,20 +187,20 @@ jobs:
 
           docker push $ECR_REGISTRY/hmrs-app:${{ env.IMAGE_TAG }}
 
-      # --------------------------------
-      # ECS DEPLOY
-      # --------------------------------
-      - name: ECS Deploy
-        run: |
+      # # --------------------------------
+      # # ECS DEPLOY
+      # # --------------------------------
+      # - name: ECS Deploy
+      #   run: |
 
-          aws ecs update-service \
-            --cluster hmrs-cluster \
-            --service hmrs-service \
-            --force-new-deployment
+      #     aws ecs update-service \
+      #       --cluster hmrs-cluster \
+      #       --service hmrs-service \
+      #       --force-new-deployment
 
-      # --------------------------------
-      # DEPLOYMENT SUCCESS
-      # --------------------------------
-      - name: Deployment Completed
-        run: |
-          echo "HMRS deployed successfully"
+      # # --------------------------------
+      # # DEPLOYMENT SUCCESS
+      # # --------------------------------
+      # - name: Deployment Completed
+      #   run: |
+      #     echo "HMRS deployed successfully"
